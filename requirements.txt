@@ -1,0 +1,11 @@
+langchain
+langchain-google-genai
+python-dotenv
+phonenumbers
+email-validator
+faiss-cpu
+tiktoken
+unstructured
+pypdf
+python-dateutil
+streamlit

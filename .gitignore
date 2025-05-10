@@ -1,0 +1,23 @@
+# Ignore PDF files
+*.pdf
+
+# Ignore Jupyter Notebook files
+*.ipynb
+*.ipynb_checkpoints/
+
+# Common IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python cache and virtualenv
+__pycache__/
+*.py[cod]
+*.venv
+venv/
+env/
+
+# System files
+.DS_Store
+Thumbs.db

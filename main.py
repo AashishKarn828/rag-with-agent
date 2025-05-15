@@ -1,38 +1,52 @@
 import streamlit as st
+import uuid
 from app.chatbot import build_qa_chain
 from app.document_loader import load_and_split_pdf
-from app.date_utils import parse_date
-from app.form_tools import validate_email_input, validate_name, validate_phone
-from app.agent_tools import book_appointment
 
 st.title("📄 Gemini RAG Chatbot + Form Agent")
 
+# Initialize session state
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "session_id" not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
 uploaded = st.file_uploader("Upload your document", type="pdf")
 if uploaded:
-    with open("temp.pdf", "wb") as f:
-        f.write(uploaded.getbuffer())
-    chunks = load_and_split_pdf("temp.pdf")
-    qa = build_qa_chain(chunks)
-    st.success("Document loaded!")
+    if "qa_chain" not in st.session_state:
+        with open("temp.pdf", "wb") as f:
+            f.write(uploaded.getbuffer())
+        chunks = load_and_split_pdf("temp.pdf")
+        st.session_state.qa_chain = build_qa_chain(chunks)
+        st.success("Document loaded!")
 
-query = st.text_input("Ask me anything from the document:")
-if query and uploaded:
-    response = qa.invoke({"input": query})
-    st.write("🤖", response["answer"])
+# Display chat messages
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-if st.button("📞 Request Callback"):
-    with st.form("contact_form"):
-        name = st.text_input("Name")
-        email = st.text_input("Email")
-        phone = st.text_input("Phone Number")
-        date_input = st.text_input("Appointment Date (e.g., next Monday)")
-
-        submitted = st.form_submit_button("Book")
-
-        if submitted:
-            if all([validate_name(name), validate_email_input(email), validate_phone(phone)]):
-                date = parse_date(date_input)
-                result = book_appointment.run(name=name, email=email, phone=phone, date=date)
-                st.success(result)
-            else:
-                st.error("Invalid input. Please check name, email, or phone.")
+# Chat input
+if query := st.chat_input("Ask me anything from the document"):
+    if not uploaded:
+        st.warning("Please upload a document first")
+        st.stop()
+    
+    # Add user message to chat history
+    st.session_state.messages.append({"role": "user", "content": query})
+    
+    # Display user message
+    with st.chat_message("user"):
+        st.markdown(query)
+    
+    # Get response with proper history handling
+    response = st.session_state.qa_chain.invoke(
+        {"input": query, "chat_history": st.session_state.messages},
+        config={"configurable": {"session_id": st.session_state.session_id}}
+    )
+    
+    # Display assistant response
+    with st.chat_message("assistant"):
+        st.markdown(response)
+    
+    # Add assistant response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": response})

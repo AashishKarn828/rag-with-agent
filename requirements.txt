@@ -7,5 +7,6 @@ faiss-cpu
 tiktoken
 unstructured
 pypdf
+dateparser
 python-dateutil
 streamlit
